@@ -7,32 +7,36 @@ class Player(pygame.sprite.Sprite):
         super().__init__(*groups)
         self.image = pygame.Surface((16, 32))
         self.rect = self.image.get_rect(topleft=pos)
+        self.hitbox = self.rect.inflate(0, -6)
         self.direction = pygame.math.Vector2()
         self.image.fill('blue')
-        self.speed_x = 0
-        self.speed_y = 0
+        self.speed = 5
 
-    def get_input(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                self.direction.y = -1
-            if event.key == pygame.K_DOWN:
-                self.direction.y = 1
-            if event.key == pygame.K_LEFT:
-                self.direction.x = -1
-            if event.key == pygame.K_RIGHT:
-                self.direction.x = 1
+    def get_input(self):
+        keys = pygame.key.get_pressed()
 
-        elif event.type == pygame.KEYUP:
-            if event.key in [pygame.K_UP, pygame.K_DOWN]:
-                self.direction.y = 0
-            if event.key in [pygame.K_LEFT, pygame.K_RIGHT]:
-                self.direction.x = 0
+        if keys[pygame.K_UP]:
+            self.direction.y = -1
+        elif keys[pygame.K_DOWN]:
+            self.direction.y = 1
+        else:
+            self.direction.y = 0
 
-    def update_position(self):
-        self.rect.x += self.direction.x * self.speed_x
-        self.rect.y += self.direction.y * self.speed_y
+        if keys[pygame.K_RIGHT]:
+            self.direction.x = 1
+        elif keys[pygame.K_LEFT]:
+            self.direction.x = -1
+        else:
+            self.direction.x = 0
 
-    def update(self, event):
-        self.get_input(event)
-        self.update_position()
+    def move(self):
+        if self.direction.magnitude() != 0:
+            self.direction = self.direction.normalize()
+
+        self.hitbox.x += self.direction.x * self.speed
+        self.hitbox.y += self.direction.y * self.speed
+        self.rect.center = self.hitbox.center
+
+    def update(self):
+        self.get_input()
+        self.move()

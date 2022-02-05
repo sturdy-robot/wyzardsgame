@@ -1,28 +1,45 @@
 import pygame
 from player import Player
-from tile import Tile
-from typing import Union
+from tile import Tile, ObstacleTile
+from typing import Union, Sequence
 from pathlib import Path
+
+
+class YSortCameraGroup(pygame.sprite.Group):
+    def __init__(self, *sprites: Union[pygame.sprite.Sprite, Sequence[pygame.sprite.Sprite]]):
+        super().__init__(*sprites)
+        self.display_surface = pygame.display.get_surface()
+        self.offset = pygame.math.Vector2()
+        w, h = self.display_surface.get_size()
+        self.half_width = w // 2
+        self.half_height = h // 2
+
+    def custom_draw(self, player):
+        self.offset.x = player.rect.centerx - self.half_width
+        self.offset.y = player.rect.centery - self.half_height
+
+        for sprite in sorted(self.sprites(), key=lambda spr: spr.rect.centery):
+            offset_pos = sprite.rect.topleft - self.offset
+            self.display_surface.blit(sprite.image, offset_pos)
 
 
 class Level:
     def __init__(self, level_file: Union[str, Path]):
         self.levelfile = level_file
         self.tilesize = 16
-        self.tiles = pygame.sprite.Group()
+        self.visible_sprites = YSortCameraGroup()
+        self.obstacle_tiles = pygame.sprite.Group()
+        self.back_tiles = pygame.sprite.Group()
         self.__player = pygame.sprite.GroupSingle()
         self.setup()
         self.display = pygame.display.get_surface()
-        self.world_shift_x = 0
-        self.world_shift_y = 0
-        self.scroll = 5
 
     @property
     def player(self):
         return self.__player
 
     @player.setter
-    def player(self, player: pygame.sprite.Sprite):
+    def player(self, player: Player):
         self.__player.add(player)
 
     def setup(self):
@@ -38,48 +55,17 @@ class Level:
             for j, cell in enumerate(row):
                 x = j * self.tilesize
                 y = i * self.tilesize
-                if cell == '.':
-                    tile = Tile((x, y), self.tilesize, "green")
-                    self.tiles.add(tile)
-                elif cell == 'P':
-                    self.player = Player((x, y))
+                if cell == 'P':
+                    Player((x, y), [self.player, self.visible_sprites])
                 elif cell == 't':
-                    tile = Tile((x, y), self.tilesize, "yellow")
-                    self.tiles.add(tile)
+                    ObstacleTile((x, y), self.tilesize, "yellow", [self.obstacle_tiles, self.visible_sprites])
                 elif cell == 'x':
-                    tile = Tile((x, y), self.tilesize, "gray")
-                    self.tiles.add(tile)
+                    ObstacleTile((x, y), self.tilesize, "gray", [self.obstacle_tiles, self.visible_sprites])
 
-    def world_scroll_x(self):
-        screen_width, screen_height = self.display.get_size()
-        if self.player.sprite.rect.centerx < screen_width / 2.8 and self.player.sprite.direction.x < 0:
-            self.world_shift_x = self.scroll
-            self.player.sprite.speed_x = 0
-        elif self.player.sprite.rect.centerx > screen_width - (screen_width / 2.8) and self.player.sprite.direction.x > 0:
-            self.world_shift_x = -self.scroll
-            self.player.sprite.speed_x = 0
-        else:
-            self.world_shift_x = 0
-            self.player.sprite.speed_x = self.scroll
+    def update(self):
+        self.back_tiles.draw(self.display)
+        self.back_tiles.update()
+        self.player.update()
+        self.obstacle_tiles.update()
+        self.visible_sprites.custom_draw(self.player.sprite)
 
-    def world_scroll_y(self):
-        screen_width, screen_height = self.display.get_size()
-        if self.player.sprite.rect.centery < screen_height / 2.8 and self.player.sprite.direction.y < 0:
-            self.world_shift_y = self.scroll
-            self.player.sprite.speed_y = 0
-        elif self.player.sprite.rect.centery > screen_height - (screen_height / 2.8) and self.player.sprite.direction.y > 0:
-            self.world_shift_y = -self.scroll
-            self.player.sprite.speed_y = 0
-        else:
-            self.world_shift_y = 0
-            self.player.sprite.speed_y = self.scroll
-
-    def update_render(self, display):
-        self.tiles.draw(display)
-        self.player.draw(display)
-
-    def update(self, event):
-        self.player.update(event)
-        self.world_scroll_x()
-        self.world_scroll_y()
-        self.tiles.update(self.world_shift_x, self.world_shift_y)
