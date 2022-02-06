@@ -15,7 +15,7 @@ class Game:
         self.level = Level('assets/level/level1.txt')
 
     def update(self):
-        self.window.fill('red')
+        self.window.fill('black')
         self.level.update()
 
     def run(self):

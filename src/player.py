@@ -1,16 +1,42 @@
 import pygame
-from pygame.sprite import AbstractGroup
+from typing import Any
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos: tuple, *groups: AbstractGroup):
+    def __init__(self, pos: tuple, *groups: Any):
         super().__init__(*groups)
         self.image = pygame.Surface((16, 32))
         self.rect = self.image.get_rect(topleft=pos)
         self.hitbox = self.rect.inflate(0, -6)
         self.direction = pygame.math.Vector2()
         self.image.fill('blue')
-        self.speed = 5
+
+        self.stats = {
+            "health": 100,
+            "mana": 50,
+            "attack": 10,
+            "magic": 4,
+            "speed": 5
+        }
+        self.health = self.stats["health"]
+        self.mana = self.stats["mana"]
+        self.speed = self.stats["speed"]
+
+    def collision(self, direction, obstacle_sprites):
+        if direction == 1:
+            for sprite in obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.x > 0:
+                        self.hitbox.right = sprite.hitbox.left
+                    if self.direction.x < 0:
+                        self.hitbox.left = sprite.hitbox.right
+        if direction == 0:
+            for sprite in obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.y > 0:
+                        self.hitbox.bottom = sprite.hitbox.top
+                    if self.direction.y < 0:
+                        self.hitbox.top = sprite.hitbox.bottom
 
     def get_input(self):
         keys = pygame.key.get_pressed()
@@ -29,14 +55,16 @@ class Player(pygame.sprite.Sprite):
         else:
             self.direction.x = 0
 
-    def move(self):
+    def move(self, obstacle_sprites):
         if self.direction.magnitude() != 0:
             self.direction = self.direction.normalize()
 
         self.hitbox.x += self.direction.x * self.speed
+        self.collision(1, obstacle_sprites)
         self.hitbox.y += self.direction.y * self.speed
+        self.collision(0, obstacle_sprites)
         self.rect.center = self.hitbox.center
 
-    def update(self):
+    def update(self, obstacle_sprites):
         self.get_input()
-        self.move()
+        self.move(obstacle_sprites)

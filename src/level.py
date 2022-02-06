@@ -3,6 +3,7 @@ from player import Player
 from tile import Tile, ObstacleTile
 from typing import Union, Sequence
 from pathlib import Path
+from ui import UI
 
 
 class YSortCameraGroup(pygame.sprite.Group):
@@ -33,6 +34,7 @@ class Level:
         self.__player = pygame.sprite.GroupSingle()
         self.setup()
         self.display = pygame.display.get_surface()
+        self.ui = UI()
 
     @property
     def player(self):
@@ -61,11 +63,13 @@ class Level:
                     ObstacleTile((x, y), self.tilesize, "yellow", [self.obstacle_tiles, self.visible_sprites])
                 elif cell == 'x':
                     ObstacleTile((x, y), self.tilesize, "gray", [self.obstacle_tiles, self.visible_sprites])
+                Tile((x, y), self.tilesize, "green", self.back_tiles)
 
     def update(self):
         self.back_tiles.draw(self.display)
         self.back_tiles.update()
-        self.player.update()
+        self.player.update(self.obstacle_tiles)
         self.obstacle_tiles.update()
         self.visible_sprites.custom_draw(self.player.sprite)
+        self.ui.display(self.player.sprite)
 
