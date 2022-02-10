@@ -5,11 +5,10 @@ from typing import Any
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos: tuple, *groups: Any):
         super().__init__(*groups)
-        self.image = pygame.Surface((16, 32))
+        self.image = pygame.image.load('assets/character/character.png')
         self.rect = self.image.get_rect(topleft=pos)
-        self.hitbox = self.rect.inflate(0, -6)
+        self.hitbox = self.rect.inflate(0, -10)
         self.direction = pygame.math.Vector2()
-        self.image.fill('blue')
 
         self.stats = {
             "health": 100,

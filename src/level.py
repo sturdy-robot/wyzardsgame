@@ -15,9 +15,13 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.half_width = w // 2
         self.half_height = h // 2
 
-    def custom_draw(self, player):
+    def custom_draw(self, player, back_tiles):
         self.offset.x = player.rect.centerx - self.half_width
         self.offset.y = player.rect.centery - self.half_height
+
+        for tile in back_tiles:
+            offset_pos = tile.rect.topleft - self.offset
+            self.display_surface.blit(tile.image, offset_pos)
 
         for sprite in sorted(self.sprites(), key=lambda spr: spr.rect.centery):
             offset_pos = sprite.rect.topleft - self.offset
@@ -27,7 +31,7 @@ class YSortCameraGroup(pygame.sprite.Group):
 class Level:
     def __init__(self, level_file: Union[str, Path]):
         self.levelfile = level_file
-        self.tilesize = 16
+        self.tilesize = 32
         self.visible_sprites = YSortCameraGroup()
         self.obstacle_tiles = pygame.sprite.Group()
         self.back_tiles = pygame.sprite.Group()
@@ -60,16 +64,15 @@ class Level:
                 if cell == 'P':
                     Player((x, y), [self.player, self.visible_sprites])
                 elif cell == 't':
-                    ObstacleTile((x, y), self.tilesize, "yellow", [self.obstacle_tiles, self.visible_sprites])
+                    ObstacleTile((x, y), 'assets/tiles/gold.png', [self.obstacle_tiles, self.visible_sprites])
                 elif cell == 'x':
-                    ObstacleTile((x, y), self.tilesize, "gray", [self.obstacle_tiles, self.visible_sprites])
-                Tile((x, y), self.tilesize, "green", self.back_tiles)
+                    ObstacleTile((x, y), 'assets/tiles/rock.png', [self.obstacle_tiles, self.visible_sprites])
+                Tile((x, y), "assets/tiles/grass.png", self.back_tiles)
 
     def update(self):
-        self.back_tiles.draw(self.display)
         self.back_tiles.update()
         self.player.update(self.obstacle_tiles)
         self.obstacle_tiles.update()
-        self.visible_sprites.custom_draw(self.player.sprite)
+        self.visible_sprites.custom_draw(self.player.sprite, self.back_tiles)
         self.ui.display(self.player.sprite)
 
